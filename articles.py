@@ -1,4 +1,9 @@
 import streamlit as st
+import pandas as pd
+
+# Load the articles database
+file_path = '/mnt/data/test article database.xlsx'
+articles_df = pd.read_excel(file_path)
 
 # Set the title of the app
 st.title("Article and News Preference Survey")
@@ -37,7 +42,12 @@ content_types = ["News articles", "Opinion pieces", "Research reports", "Intervi
 selected_content_types = st.multiselect("What type of content do you prefer? (You can select multiple)", content_types)
 other_content_type = st.text_input("Other content type (please specify):")
 
-# Display user preferences
+# Function to filter articles based on user preferences
+def filter_articles(df, categories, interests):
+    filtered_df = df[df['description'].str.contains('|'.join(categories + interests), case=False, na=False)]
+    return filtered_df
+
+# Display user preferences and filtered articles
 if st.button("Submit"):
     st.subheader("Your Preferences")
     st.write("**Interest Categories:**", selected_categories + ([other_category] if other_category else []))
@@ -45,3 +55,19 @@ if st.button("Submit"):
     st.write("**Preferred Sources:**", preferred_sources)
     st.write("**Frequency:**", selected_frequency)
     st.write("**Content Type:**", selected_content_types + ([other_content_type] if other_content_type else []))
+    
+    # Filter articles based on user preferences
+    filtered_articles = filter_articles(articles_df, selected_categories + [other_category], specific_interests)
+    
+    st.subheader("Recommended Articles")
+    if not filtered_articles.empty:
+        for index, row in filtered_articles.iterrows():
+            st.write(f"**Title:** {row['title']}")
+            st.write(f"**Author:** {row['author/0']}")
+            st.write(f"**Publisher:** {row['publisher']}")
+            st.write(f"**Description:** {row['description']}")
+            st.write(f"[Read more]({row['url']})")
+            st.image(row['image'], use_column_width=True)
+            st.write("---")
+    else:
+        st.write("No articles found matching your preferences.")
