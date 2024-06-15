@@ -33,9 +33,26 @@ if uploaded_file is not None:
     st.write("Loaded Articles:")
     st.dataframe(articles_df.head())
     
-    # Function to filter articles based on user preferences and profile
-    def filter_articles(df, categories, interests, role, interest_field):
-        filtered_df = df[df['description'].str.contains('|'.join(categories + interests + [role, interest_field]), case=False, na=False)]
+    # Function to filter and score articles based on user preferences and profile
+    def filter_and_score_articles(df, categories, interests, role, interest_field):
+        df['relevance_score'] = 0
+        
+        # Increase score for matching categories
+        for cat in categories:
+            df.loc[df['description'].str.contains(cat, case=False, na=False), 'relevance_score'] += 1
+        
+        # Increase score for matching specific interests
+        for interest in interests:
+            df.loc[df['description'].str.contains(interest, case=False, na=False), 'relevance_score'] += 1
+        
+        # Increase score for matching role
+        df.loc[df['description'].str.contains(role, case=False, na=False), 'relevance_score'] += 1
+        
+        # Increase score for matching interest field
+        df.loc[df['description'].str.contains(interest_field, case=False, na=False), 'relevance_score'] += 1
+        
+        # Filter articles with a positive relevance score and sort by score
+        filtered_df = df[df['relevance_score'] > 0].sort_values(by='relevance_score', ascending=False)
         return filtered_df
 
     # Function to generate explanation for why an article was chosen
@@ -59,12 +76,13 @@ if uploaded_file is not None:
         st.write("**Interest Categories:**", selected_categories + ([other_category] if other_category else []))
         st.write("**Specific Interests:**", specific_interests)
         
-        # Filter articles based on user preferences and profile
-        filtered_articles = filter_articles(articles_df, selected_categories + [other_category], specific_interests, user_role, user_interest_field)
+        # Filter and score articles based on user preferences and profile
+        filtered_articles = filter_and_score_articles(articles_df, selected_categories + [other_category], specific_interests, user_role, user_interest_field)
         
         st.subheader("Recommended Articles")
         if not filtered_articles.empty:
-            for index, row in filtered_articles.iterrows():
+            top_articles = filtered_articles.head(10)  # Show top 10 most relevant articles
+            for index, row in top_articles.iterrows():
                 st.write(f"**Title:** {row['title']}")
                 st.write(f"**Author:** {row['author/0']}")
                 st.write(f"**Publisher:** {row['publisher']}")
