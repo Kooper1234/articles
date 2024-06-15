@@ -58,7 +58,10 @@ if uploaded_file is not None:
         if not filtered_df.empty:
             max_score = filtered_df['relevance_score'].max()
             min_score = filtered_df['relevance_score'].min()
-            filtered_df['relevance_rating'] = 1 + 9 * (filtered_df['relevance_score'] - min_score) / (max_score - min_score)
+            if max_score != min_score:
+                filtered_df['relevance_rating'] = 1 + 9 * (filtered_df['relevance_score'] - min_score) / (max_score - min_score)
+            else:
+                filtered_df['relevance_rating'] = 10  # If all scores are the same, set rating to 10
             filtered_df['relevance_rating'] = filtered_df['relevance_rating'].round(1)
             filtered_df = filtered_df.sort_values(by='relevance_rating', ascending=False)
         
