@@ -51,8 +51,17 @@ if uploaded_file is not None:
         # Increase score for matching interest field
         df.loc[df['description'].str.contains(interest_field, case=False, na=False), 'relevance_score'] += 1
         
-        # Filter articles with a positive relevance score and sort by score
-        filtered_df = df[df['relevance_score'] > 0].sort_values(by='relevance_score', ascending=False)
+        # Filter articles with a positive relevance score
+        filtered_df = df[df['relevance_score'] > 0]
+        
+        # Normalize relevance score to a scale of 1 to 10
+        if not filtered_df.empty:
+            max_score = filtered_df['relevance_score'].max()
+            min_score = filtered_df['relevance_score'].min()
+            filtered_df['relevance_rating'] = 1 + 9 * (filtered_df['relevance_score'] - min_score) / (max_score - min_score)
+            filtered_df['relevance_rating'] = filtered_df['relevance_rating'].round(1)
+            filtered_df = filtered_df.sort_values(by='relevance_rating', ascending=False)
+        
         return filtered_df
 
     # Function to generate explanation for why an article was chosen
@@ -89,6 +98,9 @@ if uploaded_file is not None:
                 st.write(f"**Description:** {row['description']}")
                 st.write(f"[Read more]({row['url']})")
                 st.image(row['image'], use_column_width=True)
+                
+                # Display relevance rating
+                st.write(f"**Relevance Rating:** {row['relevance_rating']}/10")
                 
                 # Generate and display explanation
                 explanation = generate_explanation(row, selected_categories + [other_category], specific_interests, user_role, user_interest_field)
