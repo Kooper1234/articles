@@ -38,6 +38,19 @@ if uploaded_file is not None:
         filtered_df = df[df['description'].str.contains('|'.join(categories + interests + [role, interest_field]), case=False, na=False)]
         return filtered_df
 
+    # Function to generate explanation for why an article was chosen
+    def generate_explanation(article, categories, interests, role, interest_field):
+        reasons = []
+        if any(cat.lower() in article['description'].lower() for cat in categories):
+            reasons.append(f"matches your interest in categories like {', '.join(categories)}")
+        if any(interest.lower() in article['description'].lower() for interest in interests):
+            reasons.append(f"aligns with your specific interest in {', '.join(interests)}")
+        if role.lower() in article['description'].lower():
+            reasons.append(f"relates to your role as a {role}")
+        if interest_field.lower() in article['description'].lower():
+            reasons.append(f"is related to your current research or interest in {interest_field}")
+        return reasons
+
     # Display user preferences and filtered articles
     if st.button("Submit"):
         st.subheader("Your Preferences")
@@ -58,6 +71,15 @@ if uploaded_file is not None:
                 st.write(f"**Description:** {row['description']}")
                 st.write(f"[Read more]({row['url']})")
                 st.image(row['image'], use_column_width=True)
+                
+                # Generate and display explanation
+                explanation = generate_explanation(row, selected_categories + [other_category], specific_interests, user_role, user_interest_field)
+                if explanation:
+                    st.write("**Why this article was chosen for you:**")
+                    st.write(f"This article {' and '.join(explanation)}.")
+                else:
+                    st.write("**Why this article was chosen for you:**")
+                    st.write("This article matches your profile and interests.")
                 st.write("---")
         else:
             st.write("No articles found matching your preferences.")
