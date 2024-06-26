@@ -43,8 +43,7 @@ if uploaded_file is not None:
             messages=[
                 {"role": "system", "content": "Extract the key information from the following text."},
                 {"role": "user", "content": text}
-            ],
-            max_tokens=150
+            ]
         )
         return response.choices[0].message['content'].strip()
 
@@ -54,8 +53,7 @@ if uploaded_file is not None:
             messages=[
                 {"role": "system", "content": "Calculate the relevance score between the following user information and article information."},
                 {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
-            ],
-            max_tokens=10
+            ]
         )
         return float(response.choices[0].message['content'].strip())
 
