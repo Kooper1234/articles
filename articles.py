@@ -41,8 +41,8 @@ if uploaded_file is not None:
 
     def get_embedding(text):
         response = openai.Embedding.create(
-            input=text,
-            model="text-embedding-ada-002"
+            model="text-embedding-ada-002",
+            input=text
         )
         return response['data'][0]['embedding']
 
