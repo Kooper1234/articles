@@ -38,7 +38,7 @@ if uploaded_file is not None:
     st.dataframe(articles_df.head())
 
     def extract_relevant_info(text):
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Extract the key information from the following text."},
