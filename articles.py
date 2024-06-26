@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import openai
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 
 # Initialize OpenAI API key
 openai.api_key = 'YOUR_OPENAI_API_KEY'
@@ -37,25 +39,15 @@ if uploaded_file is not None:
     st.write("Loaded Articles:")
     st.dataframe(articles_df.head())
 
-    def extract_relevant_info(text):
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Extract the key information from the following text."},
-                {"role": "user", "content": text}
-            ]
+    def get_embedding(text):
+        response = openai.Embedding.create(
+            input=text,
+            model="text-embedding-ada-002"
         )
-        return response.choices[0].message['content'].strip()
+        return response['data'][0]['embedding']
 
-    def calculate_relevance_score(user_info, article_info):
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Calculate the relevance score between the following user information and article information."},
-                {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
-            ]
-        )
-        return float(response.choices[0].message['content'].strip())
+    def calculate_relevance_score(user_embedding, article_embedding):
+        return cosine_similarity([user_embedding], [article_embedding])[0][0]
 
     # Generate user profile information
     user_profile = {
@@ -65,12 +57,13 @@ if uploaded_file is not None:
         "specific_interests": specific_interests,
         "other_category": other_category
     }
-    user_info = extract_relevant_info(str(user_profile))
+    user_info = " ".join([str(val) for val in user_profile.values() if val])
+    user_embedding = get_embedding(user_info)
 
     articles_df['relevance_score'] = articles_df.apply(
         lambda row: calculate_relevance_score(
-            user_info,
-            extract_relevant_info(f"Title: {row['title']}\nDescription: {row['description']}\nText: {row['text']}")
+            user_embedding,
+            get_embedding(f"Title: {row['title']}\nDescription: {row['description']}\nText: {row['text']}")
         ), axis=1
     )
 
@@ -88,7 +81,7 @@ if uploaded_file is not None:
     # Function to generate explanation for why an article was chosen
     def generate_explanation(article, user_profile):
         reasons = []
-        profile_terms = extract_relevant_info(str(user_profile)).split()
+        profile_terms = user_profile.split()
         content = article['title'] + " " + article['description'] + " " + article['text']
         for term in profile_terms:
             if term in content:
@@ -118,7 +111,7 @@ if uploaded_file is not None:
                 st.write(f"**Relevance Rating:** {row['relevance_rating']}/10")
                 
                 # Generate and display explanation
-                explanation = generate_explanation(row, user_profile)
+                explanation = generate_explanation(row, user_info)
                 if explanation:
                     st.write("**Why this article was chosen for you:**")
                     st.write(f"This article {' and '.join(explanation)}.")
