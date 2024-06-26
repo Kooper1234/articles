@@ -3,7 +3,7 @@ import pandas as pd
 import openai
 
 # Initialize OpenAI API key
-openai.api_key = 'YOUR_OPENAI_API_KEY'
+openai.api_key = 'sk-proj-1xyr2VGCjuqR7X7ljCp5T3BlbkFJY2OI7LYkuaKLFbp2dscL'
 
 # Set the title of the app
 st.title("Personalized Article Recommendation")
