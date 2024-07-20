@@ -39,7 +39,7 @@ if uploaded_file is not None:
 
     def extract_relevant_info(text):
         response = openai.ChatCompletion.create(
-            model="gpt-4o",
+            model="gpt-4",
             messages=[
                 {"role": "system", "content": "Extract the key information from the following text."},
                 {"role": "user", "content": text}
