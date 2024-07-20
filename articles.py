@@ -45,28 +45,38 @@ if uploaded_file is not None:
     st.dataframe(articles_df.head())
 
     def extract_relevant_info(text):
-        data = {
-            "model": "gpt-4o-mini",
-            "messages": [
-                {"role": "system", "content": "Extract the key information from the following text."},
-                {"role": "user", "content": text}
-            ]
-        }
-        response = requests.post(api_url, headers=headers, json=data)
-        response_json = response.json()
-        return response_json['choices'][0]['message']['content'].strip()
+        try:
+            data = {
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {"role": "system", "content": "Extract the key information from the following text."},
+                    {"role": "user", "content": text}
+                ]
+            }
+            response = requests.post(api_url, headers=headers, json=data)
+            response.raise_for_status()
+            response_json = response.json()
+            return response_json['choices'][0]['message']['content'].strip()
+        except Exception as e:
+            st.error(f"Error extracting information: {e}")
+            return ""
 
     def calculate_relevance_score(user_info, article_info):
-        data = {
-            "model": "gpt-4o-mini",
-            "messages": [
-                {"role": "system", "content": "Calculate the relevance score between the following user information and article information."},
-                {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
-            ]
-        }
-        response = requests.post(api_url, headers=headers, json=data)
-        response_json = response.json()
-        return float(response_json['choices'][0]['message']['content'].strip())
+        try:
+            data = {
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {"role": "system", "content": "Calculate the relevance score between the following user information and article information."},
+                    {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
+                ]
+            }
+            response = requests.post(api_url, headers=headers, json=data)
+            response.raise_for_status()
+            response_json = response.json()
+            return float(response_json['choices'][0]['message']['content'].strip())
+        except Exception as e:
+            st.error(f"Error calculating relevance score: {e}")
+            return 0.0
 
     # Generate user profile information
     user_profile = {
