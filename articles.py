@@ -39,23 +39,23 @@ if uploaded_file is not None:
 
     def extract_relevant_info(text):
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=[
                 {"role": "system", "content": "Extract the key information from the following text."},
                 {"role": "user", "content": text}
             ]
         )
-        return response.choices[0]['message']['content'].strip()
+        return response.choices[0].message['content'].strip()
 
     def calculate_relevance_score(user_info, article_info):
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=[
                 {"role": "system", "content": "Calculate the relevance score between the following user information and article information."},
                 {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
             ]
         )
-        return float(response.choices[0]['message']['content'].strip())
+        return float(response.choices[0].message['content'].strip())
 
     # Generate user profile information
     user_profile = {
