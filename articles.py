@@ -1,9 +1,16 @@
 import streamlit as st
 import pandas as pd
-import openai
+import requests
+import json
 
 # Initialize OpenAI API key
-openai.api_key = st.secrets["OPENAI_KEY"]
+openai_api_key = st.secrets["OPENAI_KEY"]
+api_url = "https://api.openai.com/v1/chat/completions"
+
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": f"Bearer {openai_api_key}"
+}
 
 # Set the title of the app
 st.title("Personalized Article Recommendation")
@@ -38,24 +45,38 @@ if uploaded_file is not None:
     st.dataframe(articles_df.head())
 
     def extract_relevant_info(text):
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Extract the key information from the following text."},
-                {"role": "user", "content": text}
-            ]
-        )
-        return response.choices[0].message['content'].strip()
+        try:
+            data = {
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {"role": "system", "content": "Extract the key information from the following text."},
+                    {"role": "user", "content": text}
+                ]
+            }
+            response = requests.post(api_url, headers=headers, json=data)
+            response.raise_for_status()
+            response_json = response.json()
+            return response_json['choices'][0]['message']['content'].strip()
+        except Exception as e:
+            st.error(f"Error extracting information: {e}")
+            return ""
 
     def calculate_relevance_score(user_info, article_info):
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Calculate the relevance score between the following user information and article information."},
-                {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
-            ]
-        )
-        return float(response.choices[0].message['content'].strip())
+        try:
+            data = {
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {"role": "system", "content": "Calculate the relevance score between the following user information and article information."},
+                    {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
+                ]
+            }
+            response = requests.post(api_url, headers=headers, json=data)
+            response.raise_for_status()
+            response_json = response.json()
+            return float(response_json['choices'][0]['message']['content'].strip())
+        except Exception as e:
+            st.error(f"Error calculating relevance score: {e}")
+            return 0.0
 
     # Generate user profile information
     user_profile = {
@@ -108,7 +129,7 @@ if uploaded_file is not None:
             top_articles = articles_df.head(10)  # Show top 10 most relevant articles
             for index, row in top_articles.iterrows():
                 st.write(f"**Title:** {row['title']}")
-                st.write(f"**Author:** {row['author/0']}")
+                st.write(f"**Author:** {row['author']}")
                 st.write(f"**Publisher:** {row['publisher']}")
                 st.write(f"**Description:** {row['description']}")
                 st.write(f"[Read more]({row['url']})")
