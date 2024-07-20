@@ -48,7 +48,7 @@ if uploaded_file is not None:
     def extract_relevant_info(text):
         try:
             data = {
-                "model": "gpt-4o-mini",
+                "model": "gpt-4o",
                 "messages": [
                     {"role": "system", "content": "Extract the key information from the following text."},
                     {"role": "user", "content": text}
@@ -65,9 +65,9 @@ if uploaded_file is not None:
     def calculate_relevance_score(user_info, article_info):
         try:
             data = {
-                "model": "gpt-4o-mini",
+                "model": "gpt-4o",
                 "messages": [
-                    {"role": "system", "content": "Calculate the relevance score between the following user information and article information."},
+                    {"role": "system", "content": "Calculate a relevance score between the following user information and article information.  Format your response as 'Relevance Score:' [relevance score], then on a new line, show 'Rationale:' [rationale]"},
                     {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
                 ]
             }
