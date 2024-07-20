@@ -75,6 +75,7 @@ if uploaded_file is not None:
             response.raise_for_status()
             response_json = response.json()
             content = response_json['choices'][0]['message']['content'].strip()
+            st.write(f"API Response Content: {content}")  # Log the API response content
             score = re.search(r"Relevance Score: (\d+(\.\d+)?)", content)
             if score:
                 return float(score.group(1))
@@ -153,11 +154,10 @@ if uploaded_file is not None:
                     st.write("**Why this article was chosen for you:**")
                     st.write("This article matches your profile and interests.")
                 
-                # Link to the article
+                # Display the article URL
                 st.write(f"[Read more]({row['url']})")
                 st.write("---")
         else:
             st.write("No articles found matching your preferences.")
 else:
     st.write("Please upload an Excel file to proceed.")
-
