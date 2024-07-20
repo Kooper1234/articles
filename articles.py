@@ -73,7 +73,7 @@ if uploaded_file is not None:
             response = requests.post(api_url, headers=headers, json=data)
             response.raise_for_status()
             response_json = response.json()
-            return str(response_json['choices'][0]['message']['content'].strip())
+            return float(response_json['choices'][0]['message']['content'].strip())
         except Exception as e:
             st.error(f"Error calculating relevance score: {e}")
             return 0.0
