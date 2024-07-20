@@ -67,7 +67,7 @@ if uploaded_file is not None:
             data = {
                 "model": "gpt-4o",
                 "messages": [
-                    {"role": "system", "content": "Calculate a relevance score between the following user information and article information.  Format your response as 'Relevance Score:' [relevance score], then on a new line, show 'Rationale:' [rationale]"},
+                    {"role": "system", "content": "Calculate a relevance score between the following user information and article information.  Format your response as 'Relevance Score:' [relevance score], then on a new line, 'Title:' [title] as a link using url, then on a new line show 'Rationale:' [rationale]"},
                     {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
                 ]
             }
