@@ -38,34 +38,24 @@ if uploaded_file is not None:
     st.dataframe(articles_df.head())
 
     def extract_relevant_info(text):
-        response = openai.Completion.create(
-            engine="gpt-4",
-            prompt=f"Extract the key information from the following text:\n\n{text}",
-            max_tokens=150,
-            n=1,
-            stop=None,
-            temperature=0.5
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "Extract the key information from the following text."},
+                {"role": "user", "content": text}
+            ]
         )
-        return response.choices[0].text.strip()
+        return response.choices[0].message['content'].strip()
 
     def calculate_relevance_score(user_info, article_info):
-        response = openai.Completion.create(
-            engine="gpt-4",
-            prompt=f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nCalculate the relevance score between the user information and article information on a scale of 0-10 and provide an explanation.",
-            max_tokens=150,
-            n=1,
-            stop=None,
-            temperature=0.5
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "Calculate the relevance score between the following user information and article information."},
+                {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
+            ]
         )
-        result_text = response.choices[0].text.strip()
-        try:
-            score_text, explanation = result_text.split("\n\nExplanation:\n")
-            score = float(score_text.split(":")[-1].strip())
-        except ValueError as e:
-            st.error(f"Error calculating relevance score: {e}")
-            return 0, "No explanation available."
-
-        return score, explanation
+        return float(response.choices[0].message['content'].strip())
 
     # Generate user profile information
     user_profile = {
@@ -77,12 +67,12 @@ if uploaded_file is not None:
     }
     user_info = extract_relevant_info(str(user_profile))
 
-    articles_df['relevance_score'], articles_df['explanation'] = zip(*articles_df.apply(
+    articles_df['relevance_score'] = articles_df.apply(
         lambda row: calculate_relevance_score(
             user_info,
             extract_relevant_info(f"Title: {row['title']}\nDescription: {row['description']}\nText: {row['text']}")
         ), axis=1
-    ))
+    )
 
     # Normalize relevance score to a scale of 1 to 10
     if not articles_df.empty:
@@ -94,6 +84,16 @@ if uploaded_file is not None:
             articles_df['relevance_rating'] = 10  # If all scores are the same, set rating to 10
         articles_df['relevance_rating'] = articles_df['relevance_rating'].round(1)
         articles_df = articles_df.sort_values(by='relevance_rating', ascending=False)
+
+    # Function to generate explanation for why an article was chosen
+    def generate_explanation(article, user_profile):
+        reasons = []
+        profile_terms = extract_relevant_info(str(user_profile)).split()
+        content = article['title'] + " " + article['description'] + " " + article['text']
+        for term in profile_terms:
+            if term in content:
+                reasons.append(f"matches the term '{term}'")
+        return reasons
 
     # Display user preferences and filtered articles
     if st.button("Submit"):
@@ -117,9 +117,14 @@ if uploaded_file is not None:
                 # Display relevance rating
                 st.write(f"**Relevance Rating:** {row['relevance_rating']}/10")
                 
-                # Display explanation
-                st.write("**Explanation:**")
-                st.write(row['explanation'])
+                # Generate and display explanation
+                explanation = generate_explanation(row, user_profile)
+                if explanation:
+                    st.write("**Why this article was chosen for you:**")
+                    st.write(f"This article {' and '.join(explanation)}.")
+                else:
+                    st.write("**Why this article was chosen for you:**")
+                    st.write("This article matches your profile and interests.")
                 st.write("---")
         else:
             st.write("No articles found matching your preferences.")
