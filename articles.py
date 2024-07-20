@@ -38,28 +38,33 @@ if uploaded_file is not None:
     st.dataframe(articles_df.head())
 
     def extract_relevant_info(text):
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Extract the key information from the following text."},
-                {"role": "user", "content": text}
-            ]
+        response = openai.Completion.create(
+            engine="gpt-4",
+            prompt=f"Extract the key information from the following text:\n\n{text}",
+            max_tokens=150,
+            n=1,
+            stop=None,
+            temperature=0.5
         )
-        return response.choices[0]['message']['content'].strip()
+        return response.choices[0].text.strip()
 
     def calculate_relevance_score(user_info, article_info):
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Calculate the relevance score between the following user information and article information."},
-                {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
-            ]
+        response = openai.Completion.create(
+            engine="gpt-4",
+            prompt=f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nCalculate the relevance score between the user information and article information on a scale of 0-10 and provide an explanation.",
+            max_tokens=150,
+            n=1,
+            stop=None,
+            temperature=0.5
         )
-        # Extracting the numerical score from the response
-        response_text = response.choices[0]['message']['content'].strip()
-        score_line = response_text.split("\n")[0]
-        score = float(score_line.split(":")[1].strip())
-        explanation = "\n".join(response_text.split("\n")[1:]).strip()
+        result_text = response.choices[0].text.strip()
+        try:
+            score_text, explanation = result_text.split("\n\nExplanation:\n")
+            score = float(score_text.split(":")[-1].strip())
+        except ValueError as e:
+            st.error(f"Error calculating relevance score: {e}")
+            return 0, "No explanation available."
+
         return score, explanation
 
     # Generate user profile information
@@ -72,17 +77,12 @@ if uploaded_file is not None:
     }
     user_info = extract_relevant_info(str(user_profile))
 
-    relevance_data = []
-
-    for index, row in articles_df.iterrows():
-        article_info = extract_relevant_info(f"Title: {row['title']}\nDescription: {row['description']}\nText: {row['text']}")
-        score, explanation = calculate_relevance_score(user_info, article_info)
-        relevance_data.append({"index": index, "score": score, "explanation": explanation})
-
-    # Add relevance score and explanation to dataframe
-    for data in relevance_data:
-        articles_df.at[data["index"], 'relevance_score'] = data["score"]
-        articles_df.at[data["index"], 'explanation'] = data["explanation"]
+    articles_df['relevance_score'], articles_df['explanation'] = zip(*articles_df.apply(
+        lambda row: calculate_relevance_score(
+            user_info,
+            extract_relevant_info(f"Title: {row['title']}\nDescription: {row['description']}\nText: {row['text']}")
+        ), axis=1
+    ))
 
     # Normalize relevance score to a scale of 1 to 10
     if not articles_df.empty:
@@ -118,7 +118,8 @@ if uploaded_file is not None:
                 st.write(f"**Relevance Rating:** {row['relevance_rating']}/10")
                 
                 # Display explanation
-                st.write(f"**Explanation:** {row['explanation']}")
+                st.write("**Explanation:**")
+                st.write(row['explanation'])
                 st.write("---")
         else:
             st.write("No articles found matching your preferences.")
