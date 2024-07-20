@@ -67,8 +67,8 @@ if uploaded_file is not None:
             data = {
                 "model": "gpt-4o",
                 "messages": [
-                    {"role": "system", "content": "Calculate the relevance score between the following user information and article information. Format your response as 'Relevance Score: [relevance score]', then on a new line, 'Title: [title]', then on a new line, 'URL: [url]', then on a new line, 'Rationale: [rationale]'"},
-                    {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}"}
+                    {"role": "system", "content": "Calculate a relevance score between the following user information and article information.  Format your response as 'Relevance Score:' [relevance score], then on a new line, 'Title:' [title], then on a new line show 'Rationale:' [rationale]"},
+                    {"role": "user", "content": f"User Information: {user_info}\n\nArticle Information: {article_info}\n\nRelevance Score (0-10):"}
                 ]
             }
             response = requests.post(api_url, headers=headers, json=data)
@@ -76,22 +76,15 @@ if uploaded_file is not None:
             response_json = response.json()
             content = response_json['choices'][0]['message']['content'].strip()
             st.write(f"API Response Content: {content}")  # Log the API response content
-
-            # Extract relevance score, title, url, and rationale
-            score_match = re.search(r"Relevance Score: (\d+(\.\d+)?)", content)
-            title_match = re.search(r"Title: (.+)", content)
-            url_match = re.search(r"URL: (.+)", content)
-            rationale_match = re.search(r"Rationale: (.+)", content, re.DOTALL)
-
-            score = float(score_match.group(1)) if score_match else 0.0
-            title = title_match.group(1) if title_match else "N/A"
-            url = url_match.group(1) if url_match else "N/A"
-            rationale = rationale_match.group(1).strip() if rationale_match else "N/A"
-
-            return score, title, url, rationale
+            score = re.search(r"Relevance Score: (\d+(\.\d+)?)", content)
+            if score:
+                return float(score.group(1))
+            else:
+                st.error("Could not extract a numerical relevance score from the response.")
+                return 0.0
         except Exception as e:
             st.error(f"Error calculating relevance score: {e}")
-            return 0.0, "N/A", "N/A", "N/A"
+            return 0.0
 
     # Generate user profile information
     user_profile = {
@@ -103,33 +96,33 @@ if uploaded_file is not None:
     }
     user_info = extract_relevant_info(str(user_profile))
 
-    results = []
+    articles_df['relevance_score'] = articles_df.apply(
+        lambda row: calculate_relevance_score(
+            user_info,
+            extract_relevant_info(f"Title: {row['title']}\nDescription: {row['description']}\nText: {row['text']}")
+        ), axis=1
+    )
 
-    for index, row in articles_df.iterrows():
-        article_info = f"Title: {row['title']}\nDescription: {row['description']}\nText: {row['text']}\nURL: {row['url']}"
-        score, title, url, rationale = calculate_relevance_score(user_info, article_info)
-        results.append({
-            'title': title,
-            'author': row['author'],
-            'publisher': row['publisher'],
-            'description': row['description'],
-            'url': url,
-            'image': row['image'],
-            'relevance_score': score,
-            'rationale': rationale
-        })
-
-    # Create a DataFrame from the results and normalize relevance score to a scale of 1 to 10
-    if results:
-        results_df = pd.DataFrame(results)
-        max_score = results_df['relevance_score'].max()
-        min_score = results_df['relevance_score'].min()
+    # Normalize relevance score to a scale of 1 to 10
+    if not articles_df.empty:
+        max_score = articles_df['relevance_score'].max()
+        min_score = articles_df['relevance_score'].min()
         if max_score != min_score:
-            results_df['relevance_rating'] = 1 + 9 * (results_df['relevance_score'] - min_score) / (max_score - min_score)
+            articles_df['relevance_rating'] = 1 + 9 * (articles_df['relevance_score'] - min_score) / (max_score - min_score)
         else:
-            results_df['relevance_rating'] = 10  # If all scores are the same, set rating to 10
-        results_df['relevance_rating'] = results_df['relevance_rating'].round(1)
-        results_df = results_df.sort_values(by='relevance_rating', ascending=False)
+            articles_df['relevance_rating'] = 10  # If all scores are the same, set rating to 10
+        articles_df['relevance_rating'] = articles_df['relevance_rating'].round(1)
+        articles_df = articles_df.sort_values(by='relevance_rating', ascending=False)
+
+    # Function to generate explanation for why an article was chosen
+    def generate_explanation(article, user_profile):
+        reasons = []
+        profile_terms = extract_relevant_info(str(user_profile)).split()
+        content = article['title'] + " " + article['description'] + " " + article['text']
+        for term in profile_terms:
+            if term in content:
+                reasons.append(f"matches the term '{term}'")
+        return reasons
 
     # Display user preferences and filtered articles
     if st.button("Submit"):
@@ -140,8 +133,8 @@ if uploaded_file is not None:
         st.write("**Specific Interests:**", specific_interests)
         
         st.subheader("Recommended Articles")
-        if not results_df.empty:
-            top_articles = results_df.head(10)  # Show top 10 most relevant articles
+        if not articles_df.empty:
+            top_articles = articles_df.head(10)  # Show top 10 most relevant articles
             for index, row in top_articles.iterrows():
                 st.write(f"**Title:** {row['title']}")
                 st.write(f"**Author:** {row['author']}")
@@ -152,9 +145,14 @@ if uploaded_file is not None:
                 # Display relevance rating
                 st.write(f"**Relevance Rating:** {row['relevance_rating']}/10")
                 
-                # Display rationale
-                st.write("**Why this article was chosen for you:**")
-                st.write(row['rationale'])
+                # Generate and display explanation
+                explanation = generate_explanation(row, user_profile)
+                if explanation:
+                    st.write("**Why this article was chosen for you:**")
+                    st.write(f"This article {' and '.join(explanation)}.")
+                else:
+                    st.write("**Why this article was chosen for you:**")
+                    st.write("This article matches your profile and interests.")
                 
                 # Display the article URL
                 st.write(f"[Read more]({row['url']})")
