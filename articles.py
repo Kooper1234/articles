@@ -164,7 +164,7 @@ if uploaded_file is not None:
             
             st.subheader("Recommended Articles")
             if not results_df.empty:
-                top_articles = results_df.head(10)  # Show top 10 most relevant articles
+                top_articles = results_df.head(5)  # Show top 5 most relevant articles
                 for index, row in top_articles.iterrows():
                     st.write(f"**Title:** {row['title']}")
                     st.write(f"**Author:** {row['author']}")
