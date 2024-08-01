@@ -115,8 +115,8 @@ if uploaded_file is not None:
                             f"Article Text: {article['text']}\n"
                             "Generate a detailed summary of the article focusing on the following points:\n"
                             "1. Key points and findings related to the user's research interest.\n"
-                            "2. Relevant data and statistics.\n"
-                            "3. Important quotes or insights from the article.\n"
+                            "2. Relevant data and statistics related to the user's research interest and in a readable way for the users role.\n"
+                            "3. Important quotes or insights from the article related to the user's research interest and in a readable way for the users role.\n"
                             "4. How the article's content can be applied or is relevant to the user's role.\n"
                             "The summary should be structured clearly and be easily readable for the user's role."
                         )}
