@@ -81,7 +81,6 @@ if uploaded_file is not None:
                 response.raise_for_status()
                 response_json = response.json()
                 content = response_json['choices'][0]['message']['content'].strip()
-                st.write(f"API Response Content: {content}")  # Log the API response content
 
                 # Extract relevance score, title, url, and rationale
                 score_match = re.search(r"Relevance Score: (\d+(\.\d+)?)", content)
