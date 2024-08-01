@@ -100,6 +100,9 @@ if uploaded_file is not None:
 
         def generate_summary(article, user_role, user_interest_field):
             try:
+                if 'text' not in article:
+                    raise ValueError("The 'text' field is missing in the article.")
+                
                 data = {
                     "model": "gpt-4o-mini",
                     "messages": [
@@ -135,6 +138,7 @@ if uploaded_file is not None:
                 'author': row.get('author', 'N/A'),
                 'publisher': row.get('publisher', 'N/A'),
                 'description': row['description'],
+                'text': row.get('text', 'N/A'),
                 'url': url,
                 'image': row.get('image', ''),
                 'relevance_score': score,
@@ -200,4 +204,3 @@ if uploaded_file is not None:
                 st.write("No articles found matching your preferences.")
 else:
     st.write("Please upload an Excel file to proceed.")
-
