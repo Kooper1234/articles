@@ -153,6 +153,10 @@ if uploaded_file is not None:
             results_df['relevance_rating'] = results_df['relevance_rating'].round(1)
             results_df = results_df.sort_values(by='relevance_rating', ascending=False)
 
+            # Debug statement to show results DataFrame
+            st.write("Results DataFrame after sorting by relevance rating:")
+            st.dataframe(results_df.head(10))
+
         # Display user preferences and top 5 filtered articles
         if st.button("Submit"):
             st.subheader("Your Preferences")
@@ -164,6 +168,11 @@ if uploaded_file is not None:
             st.subheader("Recommended Articles")
             if not results_df.empty:
                 top_articles = results_df.head(5)  # Show top 5 most relevant articles
+
+                # Debug statement to show top 5 articles
+                st.write("Top 5 most relevant articles:")
+                st.dataframe(top_articles)
+
                 for index, row in top_articles.iterrows():
                     st.write(f"**Title:** {row['title']}")
                     st.write(f"**Author:** {row['author']}")
@@ -191,4 +200,3 @@ if uploaded_file is not None:
                 st.write("No articles found matching your preferences.")
 else:
     st.write("Please upload an Excel file to proceed.")
-
