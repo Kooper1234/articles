@@ -106,8 +106,20 @@ if uploaded_file is not None:
                 data = {
                     "model": "gpt-4o-mini",
                     "messages": [
-                        {"role": "system", "content": f"Generate a summary of the article focusing on information relevant to the user's research interest '{user_interest_field}'. The summary should be in a style that is most readable for a '{user_role}'."},
-                        {"role": "user", "content": f"Article Title: {article['title']}\n\nArticle Description: {article['description']}\n\nArticle Text: {article['text']}"}
+                        {"role": "system", "content": "You are an AI assistant that summarizes articles based on the user's role and interest."},
+                        {"role": "user", "content": (
+                            f"User Role: {user_role}\n"
+                            f"User Research Interest: {user_interest_field}\n"
+                            f"Article Title: {article['title']}\n"
+                            f"Article Description: {article['description']}\n"
+                            f"Article Text: {article['text']}\n"
+                            "Generate a detailed summary of the article focusing on the following points:\n"
+                            "1. Key points and findings related to the user's research interest.\n"
+                            "2. Relevant data and statistics.\n"
+                            "3. Important quotes or insights from the article.\n"
+                            "4. How the article's content can be applied or is relevant to the user's role.\n"
+                            "The summary should be structured clearly and be easily readable for the user's role."
+                        )}
                     ]
                 }
                 response = requests.post(api_url, headers=headers, json=data)
@@ -204,3 +216,4 @@ if uploaded_file is not None:
                 st.write("No articles found matching your preferences.")
 else:
     st.write("Please upload an Excel file to proceed.")
+
