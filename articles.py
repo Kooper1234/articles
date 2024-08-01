@@ -154,7 +154,7 @@ if uploaded_file is not None:
             results_df['relevance_rating'] = results_df['relevance_rating'].round(1)
             results_df = results_df.sort_values(by='relevance_rating', ascending=False)
 
-        # Display user preferences and filtered articles
+        # Display user preferences and top 5 filtered articles
         if st.button("Submit"):
             st.subheader("Your Preferences")
             st.write("**Role:**", user_role)
@@ -192,4 +192,3 @@ if uploaded_file is not None:
                 st.write("No articles found matching your preferences.")
 else:
     st.write("Please upload an Excel file to proceed.")
-
